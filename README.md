@@ -40,14 +40,10 @@ You will:
 ## Deployment Platforms
 
 ### Backend Deployment Options
-- **Render**: Easy to use, free tier available
-- **Railway**: Developer-friendly, generous free tier
-- **Heroku**: Well-established, extensive documentation
+- **Render** - https://devops-deployment-pixel-pulse.onrender.com
 
 ### Frontend Deployment Options
-- **Vercel**: Optimized for React apps, easy integration
-- **Netlify**: Great for static sites, good CI/CD
-- **GitHub Pages**: Free, integrated with GitHub
+- **Vercel** - https://pixel-pulse-five.vercel.app/
 
 ## CI/CD Pipeline
 
@@ -73,6 +69,4 @@ Your work will be automatically submitted when you push to your GitHub Classroom
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/)
 - [Render Documentation](https://render.com/docs)
-- [Railway Documentation](https://docs.railway.app/)
 - [Vercel Documentation](https://vercel.com/docs)
-- [Netlify Documentation](https://docs.netlify.com/) 

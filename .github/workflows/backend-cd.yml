@@ -1,0 +1,77 @@
+name: Backend CD
+
+on:
+  workflow_run:
+    workflows: ["Backend CI"]
+    types:
+      - completed
+    branches: [ main ]
+  
+  # Allow manual deployment
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './backend/package.json'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci --only=production
+      
+      - name: Deploy to Render
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+      
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 60
+      
+      - name: Health check
+        run: |
+          max_attempts=5
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Health check attempt $attempt/$max_attempts"
+            if curl -f ${{ secrets.BACKEND_URL || 'https://devops-deployment-pixel-pulse.onrender.com' }}/api/health; then
+              echo "✅ Backend health check passed!"
+              break
+            else
+              echo "❌ Health check failed, retrying in 30 seconds..."
+              sleep 30
+              attempt=$((attempt + 1))
+            fi
+          done
+          
+          if [ $attempt -gt $max_attempts ]; then
+            echo "🚨 Health check failed after $max_attempts attempts"
+            exit 1
+          fi
+      
+      - name: Run database migrations
+        run: |
+          echo "Running database migrations if needed..."
+          # Add your migration commands here if you have any
+          # curl -X POST ${{ secrets.BACKEND_URL }}/api/migrate -H "Authorization: Bearer ${{ secrets.MIGRATION_TOKEN }}"
+      
+      - name: Deployment summary
+        run: |
+          echo "🚀 Backend deployment completed!"
+          echo "🌐 API URL: ${{ secrets.BACKEND_URL || 'https://devops-deployment-pixel-pulse.onrender.com' }}"
+          echo "📊 Build info: ${{ github.sha }}"
+          echo "🕒 Deployed at: $(date)"

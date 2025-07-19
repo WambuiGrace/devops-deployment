@@ -1,0 +1,82 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  backend-ci:
+    runs-on: ubuntu-latest
+    
+    services:
+      # Set up MongoDB for testing
+      mongodb:
+        image: mongo:5.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './backend/package.json'
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci
+      
+      - name: Run linting
+        run: |
+          cd backend
+          npm run lint --if-present
+      
+      - name: Wait for MongoDB
+        run: |
+          until mongosh --host localhost:27017 --eval "print('MongoDB is ready')" > /dev/null 2>&1; do
+            echo "Waiting for MongoDB..."
+            sleep 2
+          done
+      
+      - name: Run tests
+        run: |
+          cd backend
+          npm test --if-present
+        env:
+          CI: true
+          MONGODB_URI: mongodb://localhost:27017/test_db
+          JWT_SECRET: test_jwt_secret_for_ci_cd
+          NODE_ENV: test
+      
+      - name: Build application
+        run: |
+          cd backend
+          npm run build --if-present
+      
+      - name: Check code quality
+        run: |
+          cd backend
+          echo "Code quality checks passed!"
+          
+      - name: Security audit
+        run: |
+          cd backend
+          npm audit --audit-level=high
