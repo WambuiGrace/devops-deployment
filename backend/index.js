@@ -9,8 +9,23 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const allowedOrigins = [
+    'http://localhost:5173',                //Local development
+    'https://pixel-pulse-five.vercel.app/'  //Production 
+];
+
+app.use(
+    cors({
+        origin: (origin, cb) => {
+            //Allow Postman/Curl which send no origin
+            if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+        },
+        credentials: true,
+        methods: 'GET, POST, PUT, DELETE',
+        allowedHeaders: 'content-Type, Authorization',
+    }));
 app.use(express.json());
+
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
